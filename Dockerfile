@@ -4,4 +4,4 @@ FROM denoland/deno:alpine-1.46.3
 COPY . .
 
 # Set the entrypoint to run your Deno script
-CMD ["deno", "run", "--allow-net", "--allow-read", "--allow-write", "main.ts"] 
+CMD ["deno", "run", "--allow-net", "--allow-read", "--allow-write", "--allow-env", "main.ts"] 
