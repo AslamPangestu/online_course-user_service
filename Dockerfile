@@ -1,4 +1,4 @@
-FROM denoland/deno:alpine-latest
+FROM denoland/deno:alpine-1.46.3
 
 # Copy your Deno project
 COPY . .
