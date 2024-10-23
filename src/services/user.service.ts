@@ -342,6 +342,17 @@ export default class UserService implements IUserService {
             };
         }
 
+        const passwordValid = UserValidatePasswordDTO.safeParse({
+            password: findID.data?.password,
+            confirm_password: request.old_password,
+        });
+        if (!passwordValid.success) {
+            return {
+                response: { data: null, error: passwordValid.error },
+                code: 400,
+            };
+        }
+
         const validate = await UserUpdateSchema.safeParseAsync({
             ...request,
         });

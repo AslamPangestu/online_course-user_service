@@ -15,16 +15,11 @@ const validatePassword = {
     },
 };
 
-const UserValidatePasswordSchema = z.object({
-    password: z.string().min(3),
-    confirm_password: z.string().min(3),
-});
-
 export const UserUpdateSchema = z.object({
     xata_id: z.string(),
     name: z.string().min(3).nullable(),
     email: z.string().email().nullable(),
-    password: z.string().nullable(),
+    new_password: z.string().nullable(),
     profession: z.string().nullable(),
     avatar_id: z.string().nullable(),
 });
@@ -80,9 +75,18 @@ export const UserLoginDTO = UserSchema.pick({
     password: true,
 });
 export type UserLoginDTOType = z.infer<typeof UserLoginDTO>;
-export const UserValidatePasswordDTO = UserValidatePasswordSchema.refine(
-    validatePassword.action,
-    validatePassword.rules,
+export const UserValidatePasswordDTO = z.object({
+    password: z.string().min(3),
+    confirm_password: z.string().min(3),
+}).refine(
+    async (val) => {
+        const result = await bcrypt.compare(val.confirm_password, val.password);
+        return result;
+    },
+    {
+        message: "Password incorrect",
+        path: ["confirm_password"],
+    },
 );
 export type UserValidatePasswordSchemaType = z.infer<
     typeof UserValidatePasswordDTO
@@ -105,15 +109,17 @@ export const UserUpdateAvatarDTO = z.object({
 export type UserUpdateAvatarDTOType = z.infer<typeof UserUpdateAvatarDTO>;
 
 // User Service -> UpdatePassword
-export const UserUpdatePasswordDTO = UserValidatePasswordSchema.extend({
+export const UserUpdatePasswordDTO = z.object({
     xata_id: z.string(),
+    old_password: z.string().min(3),
+    new_password: z.string().min(3),
 }).refine(validatePassword.action, validatePassword.rules).transform(
     async (data) => {
-        if (data.password) {
+        if (data.new_password) {
             const salt = await bcrypt.genSalt(10);
             return {
                 ...data,
-                password: await bcrypt.hash(data.password, salt),
+                new_password: await bcrypt.hash(data.new_password, salt),
             };
         }
         return data;

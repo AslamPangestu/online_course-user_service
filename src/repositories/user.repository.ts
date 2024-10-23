@@ -72,8 +72,8 @@ export default class UserRepository implements IUserRepository {
             if (payload.name) {
                 query += `name = ${payload.name}, `;
             }
-            if (payload.password) {
-                query += `password = ${payload.password}, `;
+            if (payload.new_password) {
+                query += `password = ${payload.new_password}, `;
             }
             if (payload.profession) {
                 query += `profession = ${payload.profession}, `;
