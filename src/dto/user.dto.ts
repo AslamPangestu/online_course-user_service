@@ -4,17 +4,6 @@ import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 import { RoleSchema } from "./role.dto.ts";
 import { AvatarSchema } from "./avatar.dto.ts";
 
-const validatePassword = {
-    action: async (val: any) => {
-        const result = await bcrypt.compare(val.confirm_password, val.password);
-        return result;
-    },
-    rules: {
-        message: "Password incorrect",
-        path: ["confirm_password"],
-    },
-};
-
 export const UserUpdateSchema = z.object({
     xata_id: z.string(),
     name: z.string().min(3).nullable(),
@@ -113,7 +102,22 @@ export const UserUpdatePasswordDTO = z.object({
     xata_id: z.string(),
     old_password: z.string().min(3),
     new_password: z.string().min(3),
-}).refine(validatePassword.action, validatePassword.rules).transform(
+    confirm_password: z.string().min(3),
+}).superRefine((val, ctx) => {
+    if (val.old_password === val.new_password) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "You can't use the same password",
+        });
+    }
+
+    if (val.confirm_password !== val.new_password) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Confirm password not match with new password",
+        });
+    }
+}).transform(
     async (data) => {
         if (data.new_password) {
             const salt = await bcrypt.genSalt(10);
