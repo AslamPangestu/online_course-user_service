@@ -3,8 +3,6 @@ import { Pool, PoolClient } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 const POOL_CONNECTIONS = 10;
 const LAZY = true;
 
-console.log(Deno.env.get("BASE_URL"));
-
 const database = new Pool(
     {
         user: Deno.env.get("DB_USERNAME"),

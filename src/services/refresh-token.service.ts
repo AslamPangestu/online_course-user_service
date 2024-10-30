@@ -1,7 +1,6 @@
 import type { IRepository, IService } from "src/lib/interface.ts";
 
 import {
-    RefreshTokenCreateDTO,
     type RefreshTokenCreateDTOType,
     RefreshTokenResponseDTO,
     type RefreshTokenResponseDTOType,
@@ -42,19 +41,9 @@ export default class RefreshTokenService implements IRefreshTokenService {
             };
         }
 
-        const validate = await RefreshTokenCreateDTO.safeParseAsync({
-            ...request,
-        });
-        if (!validate.success) {
-            return {
-                response: { data: null, error: validate.error },
-                code: 400,
-            };
-        }
-
         const result: IRepository<RefreshTokenSchemaType> = await this
             .#repo
-            .create(validate.data);
+            .create(request);
 
         if (result.error) {
             return {

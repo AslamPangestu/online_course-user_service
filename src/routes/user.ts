@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { JwtVariables } from "hono/jwt";
 
 import {
     UserLoginDTO,
@@ -11,6 +12,7 @@ import {
 
 import database from "src/lib/database.ts";
 import type { IService } from "src/lib/interface.ts";
+import type { Payload } from "src/lib/jwt.ts";
 
 import UserRepository, {
     type IUserRepository,
@@ -24,7 +26,7 @@ import RefreshTokenRepository, {
 
 import UserService, { type IUserService } from "src/services/user.service.ts";
 
-const app = new Hono();
+const app = new Hono<{ Variables: JwtVariables }>();
 
 const userRepository: IUserRepository = new UserRepository(database);
 const roleRepository: IRoleRepository = new RoleRepository(database);
@@ -51,7 +53,9 @@ app.post("/login", async (c) => {
         return c.json({ data: null, error: validate.error }, 400);
     }
 
-    const { response, code }: IService<UserResponseDTOType> = await userService
+    const { response, code }: IService<
+        { token: string; user: UserResponseDTOType }
+    > = await userService
         .login(validate.data);
     return c.json(response, code);
 });
@@ -63,24 +67,27 @@ app.post("/register", async (c) => {
         return c.json({ data: null, error: validate.error }, 400);
     }
 
-    const { response, code }: IService<UserResponseDTOType> = await userService
+    const { response, code }: IService<
+        { token: string; user: UserResponseDTOType }
+    > = await userService
         .register(validate.data);
     return c.json(response, code);
 });
 
 app.get("/profile", async (c) => {
-    const body = await c.req.json();
-    if (!body.id) {
-        return c.json({ data: null, error: "ID is required" }, 400);
-    }
+    const payload: Payload = c.get("jwtPayload");
     const { response, code }: IService<UserResponseDTOType> = await userService
-        .getByID(body.id);
+        .getByID(payload.sub);
     return c.json(response, code);
 });
 
 app.patch("/profile", async (c) => {
+    const payload: Payload = c.get("jwtPayload");
     const body = await c.req.json();
-    const validate = UserUpdateProfileDTO.safeParse(body);
+    const validate = UserUpdateProfileDTO.safeParse({
+        ...body,
+        xata_id: payload.sub,
+    });
     if (!validate.success) {
         return c.json({ data: null, error: validate.error }, 400);
     }
@@ -91,8 +98,12 @@ app.patch("/profile", async (c) => {
 });
 
 app.patch("/avatar", async (c) => {
+    const payload: Payload = c.get("jwtPayload");
     const body = await c.req.parseBody();
-    const validate = UserUpdateAvatarDTO.safeParse(body);
+    const validate = UserUpdateAvatarDTO.safeParse({
+        ...body,
+        xata_id: payload.sub,
+    });
     if (!validate.success) {
         return c.json({ data: null, error: validate.error }, 400);
     }
@@ -103,8 +114,12 @@ app.patch("/avatar", async (c) => {
 });
 
 app.patch("/password", async (c) => {
+    const payload: Payload = c.get("jwtPayload");
     const body = await c.req.json();
-    const validate = UserUpdatePasswordDTO.safeParse(body);
+    const validate = UserUpdatePasswordDTO.safeParse({
+        ...body,
+        xata_id: payload.sub,
+    });
     if (!validate.success) {
         return c.json({ data: null, error: validate.error }, 400);
     }
@@ -115,12 +130,9 @@ app.patch("/password", async (c) => {
 });
 
 app.post("/logout", async (c) => {
-    const body = await c.req.json();
-    if (!body.id) {
-        return c.json({ data: null, error: "ID is required" }, 400);
-    }
+    const payload: Payload = c.get("jwtPayload");
     const { response, code }: IService<null> = await userService
-        .logout(body.id);
+        .logout(payload.sub);
     return c.json(response, code);
 });
 

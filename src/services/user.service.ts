@@ -20,14 +20,15 @@ import fetcher, { BaseURL, Method } from "src/lib/fetcher.ts";
 import type { IUserRepository } from "src/repositories/user.repository.ts";
 import type { IRoleRepository } from "src/repositories/role.repository.ts";
 import type { IRefreshTokenRepository } from "src/repositories/refresh-token.repository.ts";
+import { generateToken } from "src/lib/jwt.ts";
 
 export interface IUserService {
     register(
         request: UserRegisterDTOType,
-    ): Promise<IService<UserResponseDTOType>>;
+    ): Promise<IService<{ token: string; user: UserResponseDTOType }>>;
     login(
         request: UserLoginDTOType,
-    ): Promise<IService<UserResponseDTOType>>;
+    ): Promise<IService<{ token: string; user: UserResponseDTOType }>>;
     logout(
         userId: string,
     ): Promise<IService<null>>;
@@ -62,7 +63,7 @@ export default class UserService implements IUserService {
 
     async register(
         request: UserRegisterDTOType,
-    ): Promise<IService<UserResponseDTOType>> {
+    ): Promise<IService<{ token: string; user: UserResponseDTOType }>> {
         const findEmail: IRepository<UserSchemaType> = await this
             .#repo
             .findByEmail(request.email);
@@ -112,9 +113,10 @@ export default class UserService implements IUserService {
                 code: 500,
             };
         }
+        const token = await generateToken(response.data);
         return {
             response: {
-                data: response.data,
+                data: { token, user: response.data },
                 error: null,
             },
             code: 200,
@@ -123,7 +125,7 @@ export default class UserService implements IUserService {
 
     async login(
         request: UserLoginDTOType,
-    ): Promise<IService<UserResponseDTOType>> {
+    ): Promise<IService<{ token: string; user: UserResponseDTOType }>> {
         const findEmail: IRepository<UserSchemaType> = await this
             .#repo
             .findByEmail(request.email);
@@ -152,9 +154,10 @@ export default class UserService implements IUserService {
                 code: 500,
             };
         }
+        const token = await generateToken(response.data);
         return {
             response: {
-                data: response.data,
+                data: { token, user: response.data },
                 error: null,
             },
             code: 200,
